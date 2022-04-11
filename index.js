@@ -1,5 +1,6 @@
 import fs from 'fs'
 import parser from '@babel/parser'
+import traverse from '@babel/traverse'
 
 function createAsset() {
   // 1.获取文件内容
@@ -12,9 +13,24 @@ function createAsset() {
   const ast = parser.parse(source, {
     sourceType: 'module'
   })
-  console.log("ast", ast);
-  return {}
+
+  // 用来存路径
+  const deps = []
+  // 获取ast里的路径
+  traverse.default(ast,{
+    ImportDeclaration({ node }) {
+      console.log("node.source.value", node.source.value);
+      deps.push(node.source.value)
+    }
+  })
+
+  // 返回文件内容和依赖路径
+  return {
+    source,
+    deps
+  }
 
 }
 
-createAsset()
+const asset = createAsset()
+console.log("asset", asset);

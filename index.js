@@ -1,7 +1,9 @@
 import fs from 'fs'
 import path from 'path'
+import ejs from 'ejs'
 import parser from '@babel/parser'
 import traverse from '@babel/traverse'
+import { transformFromAst } from 'babel-core'
 
 function createAsset(filePath) {
   // 1.获取文件内容
@@ -25,9 +27,14 @@ function createAsset(filePath) {
     }
   })
 
+  const {code} = transformFromAst(ast, null, {
+    presets: ['env']
+  })
+
   // 返回文件内容和依赖路径
   return {
-    source,
+    filePath,
+    code,
     deps
   }
 
@@ -48,6 +55,26 @@ function createGraph() {
     })
   }
 
+  return queue;
 }
 
-createGraph()
+const graph = createGraph()
+console.log("graph", graph);
+
+function build(graph) {
+  const template = fs.readFileSync('./bundle.ejs', {encoding: 'utf-8'})
+  
+  const data = graph.map((asset)=> {
+    return {
+      filePath: asset.filePath,
+      code: asset.code
+    }
+  })
+  
+  const code = ejs.render(template, {data})
+  console.log(code);
+
+  fs.writeFileSync('./dist/bundle.js', code);
+}
+
+build(graph)

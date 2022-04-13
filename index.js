@@ -51,7 +51,7 @@ function createGraph() {
   for (const asset of queue) {
     asset.deps.forEach(relativePath => {
       const child = createAsset(path.resolve('./example', relativePath))
-      console.log('child', child);
+      queue.push(child)
     })
   }
 

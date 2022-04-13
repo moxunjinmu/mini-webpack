@@ -23,4 +23,18 @@ console.log("main");
     }
   
   
+    'D:\code\vue源码\mini-webpack\example\foo.js': function (require, module, exports) {
+      "use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.foo = foo;
+
+function foo() {
+  console.log("foo.js");
+}
+    }
+  
+  
 })

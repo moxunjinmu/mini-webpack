@@ -82,8 +82,8 @@ function build(graph) {
     }
   })
   
+  console.log("data--", data);
   const code = ejs.render(template, {data})
-  // console.log(code);
 
   fs.writeFileSync('./dist/bundle.js', code);
 }

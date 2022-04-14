@@ -36,8 +36,25 @@
     });
     exports.foo = foo;
 
+    var _bar = require("./bar.js");
+
     function foo() {
       console.log("foo.js");
+      (0, _bar.bar)();
+    }
+  }, { "./bar.js": 2 }],
+
+
+  '2': [function (require, module, exports) {
+    "use strict";
+
+    Object.defineProperty(exports, "__esModule", {
+      value: true
+    });
+    exports.bar = bar;
+
+    function bar() {
+      console.log("bar");
     }
   }, {}],
 

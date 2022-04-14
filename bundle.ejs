@@ -12,9 +12,9 @@
   require('./main.js')
 })({
   <% data.forEach(info => { %>
-    '<%- info["filePath"] %>': function (require, module, exports) {
+    '<%- info["id"] %>': [function (require, module, exports) {
       <%- info["code"] %>
-    }
+    },<% JSON.stringify(info["mapping"]) %>],
   
   <% }) %>
 })

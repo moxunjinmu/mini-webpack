@@ -4,6 +4,7 @@ import ejs from 'ejs'
 import parser from '@babel/parser'
 import traverse from '@babel/traverse'
 import { transformFromAst } from 'babel-core'
+let id = 0
 
 function createAsset(filePath) {
   // 1.获取文件内容
@@ -35,7 +36,9 @@ function createAsset(filePath) {
   return {
     filePath,
     code,
-    deps
+    deps,
+    mapping: {},
+    id: id++
   }
 
 }
@@ -51,6 +54,7 @@ function createGraph() {
   for (const asset of queue) {
     asset.deps.forEach(relativePath => {
       const child = createAsset(path.resolve('./example', relativePath))
+      asset.mapping[relativePath] = child.id
       queue.push(child)
     })
   }
@@ -59,20 +63,27 @@ function createGraph() {
 }
 
 const graph = createGraph()
-console.log("graph", graph);
+// console.log("graph", graph);
 
 function build(graph) {
   const template = fs.readFileSync('./bundle.ejs', {encoding: 'utf-8'})
   
   const data = graph.map((asset)=> {
+    const {id,code,mapping} = asset
+    // return {
+    //   id: asset.id,
+    //   code: asset.code,
+    //   mapping: asset.mapping
+    // }
     return {
-      filePath: asset.filePath,
-      code: asset.code
+      id,
+      code,
+      mapping
     }
   })
   
   const code = ejs.render(template, {data})
-  console.log(code);
+  // console.log(code);
 
   fs.writeFileSync('./dist/bundle.js', code);
 }

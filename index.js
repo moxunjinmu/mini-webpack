@@ -4,14 +4,34 @@ import ejs from 'ejs'
 import parser from '@babel/parser'
 import traverse from '@babel/traverse'
 import { transformFromAst } from 'babel-core'
+import {jsonLoader} from './jsonLoader.js'
 let id = 0
+
+const webpackConfig = {
+  module: {
+    rules: [{
+      test: /\.json$/,
+      use: jsonLoader
+    }]
+  }
+}
 
 function createAsset(filePath) {
   // 1.获取文件内容
-  const source = fs.readFileSync(filePath, {
+  let source = fs.readFileSync(filePath, {
     encoding: 'utf-8'
   })
   console.log("file-source:", source);
+
+  const loaders = webpackConfig.module.rules
+
+  // 循环调用loader
+  loaders.forEach( ({test, use}) => {
+    // 测试文件是否符合正则表达式(json)
+    if(test.test(filePath)){
+      source = use(source)
+    }
+  })
   // 2.获取依赖关系
   //  ast => 抽象语法树
   const ast = parser.parse(source, {

@@ -23,18 +23,26 @@ function createAsset(filePath) {
   })
   console.log("file-source:", source);
 
-  const loaders = webpackConfig.module.rules
+  // init loader
+  const loaders = webpackConfig.module.rules;
+  const loaderContext = {
+    addDeps(dep){
+      console.log("addDeps", dep);
+    }
+  }
 
   // 循环调用loader
   loaders.forEach(({ test, use }) => {
     // 测试文件是否符合正则表达式(json)
     if (test.test(filePath)) {
       if (Array.isArray(use)) {
-        use.reverse.forEach((fn) => {
-          source = fn(source)
+        // TODO: use.reverse 会报错
+        use.forEach((fn) => {
+          // 向loader抛出内部webpack内loaderContext上下文对象
+          source = fn.call(loaderContext,source)
         })
       } else {
-        source = use(source)
+        source = use.call(loaderContext, source)
       }
     }
   })

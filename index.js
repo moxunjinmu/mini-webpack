@@ -4,14 +4,14 @@ import ejs from 'ejs'
 import parser from '@babel/parser'
 import traverse from '@babel/traverse'
 import { transformFromAst } from 'babel-core'
-import {jsonLoader} from './jsonLoader.js'
+import { jsonLoader } from './jsonLoader.js'
 let id = 0
 
 const webpackConfig = {
   module: {
     rules: [{
       test: /\.json$/,
-      use: jsonLoader
+      use: [jsonLoader]
     }]
   }
 }
@@ -26,10 +26,16 @@ function createAsset(filePath) {
   const loaders = webpackConfig.module.rules
 
   // 循环调用loader
-  loaders.forEach( ({test, use}) => {
+  loaders.forEach(({ test, use }) => {
     // 测试文件是否符合正则表达式(json)
-    if(test.test(filePath)){
-      source = use(source)
+    if (test.test(filePath)) {
+      if (Array.isArray(use)) {
+        use.reverse.forEach((fn) => {
+          source = fn(source)
+        })
+      } else {
+        source = use(source)
+      }
     }
   })
   // 2.获取依赖关系
@@ -41,14 +47,14 @@ function createAsset(filePath) {
   // 用来存路径
   const deps = []
   // 获取ast里的路径
-  traverse.default(ast,{
+  traverse.default(ast, {
     ImportDeclaration({ node }) {
       console.log("node.source.value:", node.source.value);
       deps.push(node.source.value)
     }
   })
 
-  const {code} = transformFromAst(ast, null, {
+  const { code } = transformFromAst(ast, null, {
     presets: ['env']
   })
 
@@ -86,10 +92,10 @@ const graph = createGraph()
 // console.log("graph", graph);
 
 function build(graph) {
-  const template = fs.readFileSync('./bundle.ejs', {encoding: 'utf-8'})
-  
-  const data = graph.map((asset)=> {
-    const {id,code,mapping} = asset
+  const template = fs.readFileSync('./bundle.ejs', { encoding: 'utf-8' })
+
+  const data = graph.map((asset) => {
+    const { id, code, mapping } = asset
     // return {
     //   id: asset.id,
     //   code: asset.code,
@@ -101,9 +107,9 @@ function build(graph) {
       mapping
     }
   })
-  
+
   console.log("data--", data);
-  const code = ejs.render(template, {data})
+  const code = ejs.render(template, { data })
 
   fs.writeFileSync('./dist/bundle.js', code);
 }

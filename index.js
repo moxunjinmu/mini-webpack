@@ -5,6 +5,8 @@ import parser from '@babel/parser'
 import traverse from '@babel/traverse'
 import { transformFromAst } from 'babel-core'
 import { jsonLoader } from './jsonLoader.js'
+import { ChangeOutputPath} from './ChangeOutputPath.js'
+import { SyncHook } from 'tapable'
 let id = 0
 
 const webpackConfig = {
@@ -13,7 +15,12 @@ const webpackConfig = {
       test: /\.json$/,
       use: [jsonLoader]
     }]
-  }
+  },
+  plugins: [new ChangeOutputPath]
+}
+
+const hooks = {
+  emitFile: new SyncHook(['context'])
 }
 
 function createAsset(filePath) {
@@ -21,7 +28,7 @@ function createAsset(filePath) {
   let source = fs.readFileSync(filePath, {
     encoding: 'utf-8'
   })
-  console.log("file-source:", source);
+  // console.log("file-source:", source);
 
   // init loader
   const loaders = webpackConfig.module.rules;
@@ -57,7 +64,7 @@ function createAsset(filePath) {
   // 获取ast里的路径
   traverse.default(ast, {
     ImportDeclaration({ node }) {
-      console.log("node.source.value:", node.source.value);
+      // console.log("node.source.value:", node.source.value);
       deps.push(node.source.value)
     }
   })
@@ -95,9 +102,16 @@ function createGraph() {
 
   return queue;
 }
-
+function initPlugins () {
+  const plugins = webpackConfig.plugins
+  plugins.forEach((plugin) => {
+    plugin.apply(hooks)
+  })
+}
+initPlugins()
 const graph = createGraph()
 // console.log("graph", graph);
+
 
 function build(graph) {
   const template = fs.readFileSync('./bundle.ejs', { encoding: 'utf-8' })
@@ -116,10 +130,17 @@ function build(graph) {
     }
   })
 
-  console.log("data--", data);
+  // console.log("data--", data);
   const code = ejs.render(template, { data })
 
-  fs.writeFileSync('./dist/bundle.js', code);
+  let outputPath = './dist/bundle.js'
+  const context = {
+    changeOutputPath(path) {
+      outputPath = path;
+    }
+  }
+  hooks.emitFile.call(context)
+  fs.writeFileSync(outputPath, code);
 }
 
 build(graph)
